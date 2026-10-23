@@ -1,10 +1,10 @@
 # Aktualny stan
 
 ## Cel
-Zbiór niezależnych skryptów PowerShell, z osobnymi folderami i dokumentacją. Skrypty zawodowe znajdują się w `Praca/`.
+Zbiór niezależnych skryptów PowerShell, z osobnymi folderami i dokumentacją. Skrypty zawodowe znajdują się w `!PRACA/`.
 
 ## Potwierdzony stan
-- Dostępne projekty: `Search in PDFs` oraz `Praca/Service Box Logs Reporting`; opis uruchomienia znajduje się w ich README.
+- Dostępne projekty: `Przeszukiwarka PDF` oraz `!PRACA/Service Box Logs Reporting`; opis uruchomienia znajduje się w ich README.
 - Początkowe lokalny `main` i `origin/main` mają oddzielne historie, ale identyczną zawartość. Lokalny `main` zachowano bez zmian.
 - `develop` utworzono z `origin/main`; porządkowanie jest na gałęzi `chore/kontekst-projektu`. Nie wykonano merge do `develop` ani `main`.
 - Porównano skrypt Service Box ze starym folderem: różnił się tylko komentarzem zakresu dat; zachowano dokładniejsze objaśnienie.

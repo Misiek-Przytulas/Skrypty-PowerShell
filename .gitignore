@@ -15,12 +15,12 @@ Desktop.ini
 *.local.json
 
 # Pobrane pakiety Poppler (odtwarzane przez instalator)
-/Search in PDFs/tools/
-/Praca/Service Box Logs Reporting/tools/
+/Przeszukiwarka PDF/tools/
+/!PRACA/Service Box Logs Reporting/tools/
 
 # Istniejące dane i wyniki testów; pozostają lokalnie
-/Praca/Service Box Logs Reporting/test-log-report/
+/!PRACA/Service Box Logs Reporting/test-log-report/
 
 # Lokalne wyniki skryptów w uzgodnionych katalogach
-/Search in PDFs/output/
-/Praca/Service Box Logs Reporting/output/
+/Przeszukiwarka PDF/output/
+/!PRACA/Service Box Logs Reporting/output/

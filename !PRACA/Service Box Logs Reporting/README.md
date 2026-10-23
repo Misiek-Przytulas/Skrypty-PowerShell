@@ -31,6 +31,6 @@ Daty są interpretowane w lokalnym czasie komputera, bez przeliczania stref. Czy
 
 ## Stan i dalsza praca
 
-Kod został przeniesiony do `Praca/Service Box Logs Reporting`. Zachowano dokładniejszy komentarz `PreviousDayOnly` ze starego folderu; porównanie wersji nie wykazało różnic w działaniu. Stary folder pozostaje bez zmian.
+Kod został przeniesiony do `!PRACA/Service Box Logs Reporting`. Zachowano dokładniejszy komentarz `PreviousDayOnly` ze starego folderu; porównanie wersji nie wykazało różnic w działaniu. Stary folder pozostaje bez zmian.
 
 Foldery `test-log-report` i `tools` są lokalne i pomijane przez Git. Kolejne zmiany funkcjonalne należy sprawdzać na sztucznych logach, bez wysyłania poczty i bez dodawania wyników do repozytorium. W ramach uporządkowania nie sprawdzano rzeczywistego SMTP ani działania na produkcyjnych logach.
