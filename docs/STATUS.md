@@ -1,19 +1,23 @@
 # Aktualny stan
 
 ## Cel
-Zbiór niezależnych skryptów PowerShell, z osobnymi folderami i dokumentacją. Skrypty zawodowe znajdują się w `!PRACA/`.
+Zbiór niezależnych skryptów PowerShell. Skrypty zawodowe są w `!PRACA/`, pozostałe foldery projektów zawierają skrypty prywatne. Każdy projekt ma własne README.
 
 ## Potwierdzony stan
-- Dostępne projekty: `Przeszukiwarka PDF` oraz `!PRACA/Service Box Logs Reporting`; opis uruchomienia znajduje się w ich README.
-- Początkowe lokalny `main` i `origin/main` mają oddzielne historie, ale identyczną zawartość. Lokalny `main` zachowano bez zmian.
-- `develop` utworzono z `origin/main`; porządkowanie jest na gałęzi `chore/kontekst-projektu`. Nie wykonano merge do `develop` ani `main`.
-- Porównano skrypt Service Box ze starym folderem: różnił się tylko komentarzem zakresu dat; zachowano dokładniejsze objaśnienie.
+- Dostępne projekty: `Przeszukiwarka PDF` oraz `!PRACA/Service Box Logs Reporting`.
+- Przy sprawdzeniu 23.10.2026 gałęzie lokalne `main`, `develop` i `Poprawienie-HTML` oraz lokalne referencje `origin/main` i `origin/develop` wskazywały commit `dbd00ab`. Nie odświeżano referencji przez fetch.
+- Bieżące zadanie kontynuujemy na `Poprawienie-HTML`, zgodnie z poleceniem użytkownika. Uporządkowano opis podziału skryptów i pracy na gałęziach; właściwe poprawki HTML czekają na szczegóły.
 
-## Decyzje i ograniczenia
-- Gałęzią integracyjną jest `develop`, a nowe zadania powstają na osobnych gałęziach.
-- Kontekst i uruchomienie konkretnego skryptu pozostają w jego README; zasady pracy są w głównym AGENTS.md.
-- Dane testowe, wyniki, pobrane pakiety i lokalne sekrety nie trafiają do Git. Istniejące lokalne pliki zachowano.
-- Nie potwierdzono działania SMTP ani uruchomienia raportera na rzeczywistych logach. Nie dodawano konfiguracji z sekretami.
+- Lokalny warsztat testów i narzędzi to główny `!codex-temp/`, ignorowany przez Git. Dawne `test-log-report` i `tools` z projektu Service Box są w `!codex-temp/Service Box Logs Reporting/`; kod nie został zmieniony. Zasady odtworzenia po klonowaniu są w głównym README, a opis skryptu pozostaje w README projektu.
 
-## Następny krok
-Przejrzeć pull request porządkujący repozytorium do `develop`. Merge wykonać wyłącznie na wyraźne polecenie. Następne zmiany skryptów prowadzić zgodnie z AGENTS.md.
+- README obu projektów ujednolicono: cel, pliki, wymagania, konfiguracja, uruchomienie, działania zewnętrzne, bezpieczne sprawdzenie i ograniczenia. Opisy porównano z kodem; nie wykonywano testów działania ani instalacji. Normalne uruchomienie nie zależy od warsztatu; Poppler jest opcjonalną zależnością użytkową wyszukiwarki PDF.
+
+## Zasady aktualizacji
+- Przed kolejną pracą sprawdź bieżącą gałąź, status i historię Git; powyższy zapis nie zastępuje tego sprawdzenia.
+- Ten plik opisuje kontekst swojej gałęzi. README i status aktualizuj wraz ze zmianami kodu; przenoszą się przez commit i merge, nie przez ręczne kopiowanie.
+- Stałe zasady są w `AGENTS.md`, ogólny opis w głównym README, a szczegóły skryptu w jego README.
+- Nowe zadania zaczynaj z aktualnego `develop`, chyba że użytkownik wskazuje istniejącą gałąź. Nie wykonuj merge bez wyraźnego polecenia.
+
+## Ograniczenia
+- Dane testowe, wyniki, pobrane pakiety i lokalne sekrety nie trafiają do Git. Istniejące lokalne pliki pozostają zachowane.
+- Nie potwierdzono SMTP ani działania raportera na rzeczywistych logach.

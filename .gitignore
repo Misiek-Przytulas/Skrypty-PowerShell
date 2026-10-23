@@ -24,3 +24,6 @@ Desktop.ini
 # Lokalne wyniki skryptów w uzgodnionych katalogach
 /Przeszukiwarka PDF/output/
 /!PRACA/Service Box Logs Reporting/output/
+
+# Lokalny warsztat Codex: testy, wyniki i pobrane narzedzia; odtwarzany w razie potrzeby
+/!codex-temp/

@@ -1,13 +1,15 @@
 # Zasady pracy w repozytorium
 
 - Wyjaśniaj krótko, prostym językiem i po polsku.
-- Przed pracą przeczytaj `docs/STATUS.md`, README danego skryptu oraz sprawdź stan Git. Stan repozytorium ma pierwszeństwo przed nieaktualnymi notatkami.
+- Przed każdą pracą przeczytaj `docs/STATUS.md` i README danego skryptu oraz odczytaj bieżącą gałąź, stan zmian i historię Git. Nie zakładaj gałęzi na podstawie poprzedniej rozmowy. Stan repozytorium ma pierwszeństwo przed nieaktualnymi notatkami.
+- Skrypty zawodowe należą do `!PRACA/<nazwa projektu>/`; pozostałe foldery projektów zawierają skrypty prywatne. Nie kopiuj kodu między dawnymi lokalizacjami i repozytorium bez potrzeby wynikającej z zadania.
 - Każde nowe zadanie wykonuj na osobnej gałęzi z aktualnego `develop`, chyba że użytkownik wyraźnie poleci kontynuować istniejącą gałąź. Aktualizuj `develop` wyłącznie przez fast-forward; przy rozbieżnościach lub lokalnych commitach nieobecnych na GitHubie zatrzymaj się i poinformuj użytkownika.
 - Nie nadpisuj ani nie usuwaj niezapisanych zmian użytkownika; nie chowaj ich automatycznie do stash.
 - Nie wykonuj merge bez wyraźnego polecenia. Nie używaj force push ani destrukcyjnych operacji Git bez wyraźnej zgody.
 - Zmieniaj wyłącznie pliki potrzebne do zadania. Nie twórz dodatkowych plików z kontekstem, planów, notatek ani raportów.
 - Utrzymuj `docs/STATUS.md` krótki. Po istotnych zmianach opisuj końcowy stan, nie przebieg rozmowy. Kontekst konkretnego skryptu zapisuj w jego README; nie powielaj informacji.
-- Rozróżniaj zmiany na gałęzi od zmian połączonych do `develop` lub `main`. Nie oznaczaj merge jako zakończonego przed wykonaniem.
+- Rozróżniaj zmiany na gałęzi od zmian połączonych do `develop` lub `main`. Potwierdzaj stan merge w Git; nie oznaczaj go jako zakończonego przed wykonaniem.
+- Dokumentacja jest wersjonowana na gałęziach razem z kodem. Aktualizuj potrzebne README i `docs/STATUS.md` w tej samej zmianie co funkcjonalność; nie synchronizuj ich przez kopiowanie między gałęziami. Samo przełączenie gałęzi nie wymaga przepisywania STATUS.md. Wpis o bieżącym zadaniu traktuj jako kontekst gałęzi, nie niezależny rejestr wszystkich gałęzi.
 - Ogólny opis repozytorium utrzymuj w głównym README; opis i uruchomienie skryptu w README jego folderu.
 - Nie zapisuj w repozytorium haseł, tokenów, kluczy ani rzeczywistych danych uwierzytelniających. Nie odczytuj ani nie wypisuj sekretów bez potrzeby związanej z zadaniem.
 - Lokalną konfigurację z sekretami pomijaj w Git. Wersjonuj wyłącznie potrzebny przykład bez sekretów, np. `.env.example`. Nie twórz konfiguracji na zapas.
@@ -15,4 +17,7 @@
 - Przed commitem sprawdź diff i listę plików pod kątem zakresu oraz sekretów. Dodawaj pliki jawnie, wyłącznie związane z zadaniem.
 - Wykonuj sprawdzenia odpowiednie do zmiany. Nie twórz testów dla samych zmian dokumentacji. Nie deklaruj testów, których nie wykonano.
 - Po zakończeniu krótko podaj: co zmieniono, jak sprawdzono, na jakiej gałęzi oraz czy wykonano commit i push.
+- Testowe dane, logi, raporty, pliki pomocnicze i narzędzia pobierane do pracy Codex twórz wyłącznie w głównym `!codex-temp/<nazwa projektu>/`, ignorowanym przez Git. Nie twórz takich folderów obok skryptów i nie używaj `git add -f` dla warsztatu. Istniejących zależności uruchomieniowych innych projektów nie przenoś bez sprawdzenia ich README.
+- Po klonowaniu brak `!codex-temp/` jest normalny. Twórz potrzebne podfoldery i odtwarzaj sztuczne dane/narzędzia tylko w razie potrzeby, według README projektu. Do testów podawaj jawne ścieżki w warsztacie i wyłącz działania zewnętrzne. Kontekst, opis oraz instrukcje odtwarzania przechowuj w wersjonowanym README projektu, nie w warsztacie.
+- Skrypty przeznaczone do normalnego używania nie mogą zależeć od istnienia ani zawartości `!codex-temp/`. Wymagane zależności użytkownika oraz sposób ich instalacji i konfiguracji opisuj w README projektu, niezależnie od lokalnego warsztatu Codex.
 - Nie instaluj narzędzi i zależności, jeśli nie są potrzebne do zadania.
