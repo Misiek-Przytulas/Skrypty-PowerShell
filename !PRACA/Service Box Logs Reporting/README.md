@@ -68,7 +68,17 @@ Powyższe przykłady zakładają domyślny `ReportDate`, czyli wczoraj. `Previou
 | `EmailOnlyWhenErrors` | `$false` | `$false`: mail także po czystym skanie; `$true`: tylko przy zachowanych błędach lub problemach skanowania. |
 | `UseSsl` | `$false` | Włącza SSL/TLS dla SMTP; dostosuj razem z portem do swojego relay. |
 
-Ustaw `To` (może zawierać kilka adresów), `From`, `SMTPServer`, `SMTPPort` (domyślnie 25), opcjonalnie `Credential` oraz prefiks `Subject`. Ścieżki i adresy w kodzie są przykładami. Gdy żaden format nie jest zapisany, raport TXT jest wyświetlany w konsoli.
+Ustaw `To` (może zawierać kilka adresów), `From`, `SMTPServer`, `SMTPPort` (domyślnie 25), opcjonalnie `Credential` oraz etykietę `Subject` (domyślnie `Logs report`). Temat ma format `<ReportHostName> Logs report - <zakres>`, np. `SERVER01 Logs report - ALL DATES`. `ReportHostName` domyślnie pobiera nazwę komputera uruchamiającego skrypt i jest wyświetlany także w tytule HTML; przy analizie logów innego serwera ustaw ten parametr jawnie. Ścieżki i adresy w kodzie są przykładami. Gdy żaden format nie jest zapisany, raport TXT jest wyświetlany w konsoli.
+
+### Wygląd HTML i treść maila
+
+HTML używa jasnego tła, pastelowych kart podsumowania i osobnych sekcji dni. Access Denied ma różowy akcent i wyróżniony CN; pozostałe błędy — niebieski, brak błędów — zielony, a niepełne skanowanie — bursztynowy. Status skanowania dotyczy kompletności odczytu, nie braku błędów w logach.
+
+Każda grupa błędów ma czytelną kartę z liczbą zdarzeń, operacją/kategorią, godzinami i fragmentem komunikatu. Wiersze `File: nazwa | HH:mm:ss | Line: numer` pokazują źródła, godziny z początku właściwych wpisów i ich numery linii; przy grupowaniu i łączeniu kopii zachowane są wszystkie unikalne lokalizacje. Używają tego samego kroju, rozmiaru i koloru co operacja i godziny. Dni, karty (według najnowszego zdarzenia), źródła w kartach i szczegóły TXT są od najnowszych. Access Denied pozostaje przed innymi błędami w obrębie dnia. Zakres godzin jest od pierwszego do ostatniego wystąpienia, a komunikat pochodzi z najnowszego zdarzenia. Fragment HTML jest ograniczony do 420 znaków, z informacją o skróceniu; TXT zachowuje pełne wpisy i źródła. Długie tokeny dostają niewidoczne możliwości łamania linii wyłącznie w HTML.
+
+Ten sam HTML jest zapisywany do pliku i przekazywany jako `Body` z `BodyAsHtml`. Układ opiera się na tabelach i stylach inline, z ograniczeniem szerokości i wariantem dla klasycznego Outlooka. Nie wymaga JavaScript, zewnętrznych fontów ani obrazków. Zaokrąglenia mogą wyglądać inaczej w różnych klientach; wygląd w rzeczywistym Outlooku/Gmailu wymaga próby w danym środowisku.
+
+Dla maila z pełnym załącznikiem pozostaw `SendEmail`, `SaveToDisk`, `SaveTxt` i `AttachTxtToEmail` jako `$true`. `SaveHtml` steruje tylko dodatkowym plikiem HTML. Stopka informuje o załączniku wyłącznie wtedy, gdy konfiguracja przewiduje jego wysłanie i TXT ma ścieżkę w tym uruchomieniu.
 
 ## Uruchomienie
 
@@ -132,4 +142,4 @@ Po klonowaniu w razie potrzeby odtwórz warsztat oraz sztuczne logi, bez kopiowa
 
 ## Stan weryfikacji
 
-Opis porównano z bieżącym PS1 i launcherem CMD. W ramach tej aktualizacji dokumentacji nie uruchamiano testów, SMTP, zapisu na docelowym udziale ani skanowania produkcyjnych logów. Zasady repozytorium: [AGENTS.md](../../AGENTS.md), [status](../../docs/STATUS.md).
+Układ HTML sprawdzono na sztucznych logach w Windows PowerShell 5.1: podział dni i grupowanie, brak błędów, niepełny skan, długie komunikaty i kodowanie tekstu HTML. Atrapa SMTP potwierdziła zgodność treści maila z plikiem HTML, załącznik TXT oraz brak załącznika przy wyłączonym zapisie. Porównanie z wcześniejszym raportem potwierdziło zachowanie szczegółów TXT. Nie wysyłano prawdziwych maili, nie sprawdzano docelowego udziału ani logów produkcyjnych. Wizualny podgląd w przeglądarce był niedostępny ze względu na blokadę lokalnych plików; nie potwierdzono wyglądu w klientach pocztowych. Zasady repozytorium: [AGENTS.md](../../AGENTS.md), [status](../../docs/STATUS.md).

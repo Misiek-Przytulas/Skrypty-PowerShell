@@ -4,13 +4,10 @@
 Zbiór niezależnych skryptów PowerShell. Skrypty zawodowe są w `!PRACA/`, pozostałe foldery projektów zawierają skrypty prywatne. Każdy projekt ma własne README.
 
 ## Potwierdzony stan
-- Dostępne projekty: `Przeszukiwarka PDF` oraz `!PRACA/Service Box Logs Reporting`.
-- Przy sprawdzeniu 23.10.2026 gałęzie lokalne `main`, `develop` i `Poprawienie-HTML` oraz lokalne referencje `origin/main` i `origin/develop` wskazywały commit `dbd00ab`. Nie odświeżano referencji przez fetch.
-- Bieżące zadanie kontynuujemy na `Poprawienie-HTML`, zgodnie z poleceniem użytkownika. Uporządkowano opis podziału skryptów i pracy na gałęziach; właściwe poprawki HTML czekają na szczegóły.
-
-- Lokalny warsztat testów i narzędzi to główny `!codex-temp/`, ignorowany przez Git. Dawne `test-log-report` i `tools` z projektu Service Box są w `!codex-temp/Service Box Logs Reporting/`; kod nie został zmieniony. Zasady odtworzenia po klonowaniu są w głównym README, a opis skryptu pozostaje w README projektu.
-
-- README obu projektów ujednolicono: cel, pliki, wymagania, konfiguracja, uruchomienie, działania zewnętrzne, bezpieczne sprawdzenie i ograniczenia. Opisy porównano z kodem; nie wykonywano testów działania ani instalacji. Normalne uruchomienie nie zależy od warsztatu; Poppler jest opcjonalną zależnością użytkową wyszukiwarki PDF.
+- Projekty: `Przeszukiwarka PDF` oraz `!PRACA/Service Box Logs Reporting`; opisy i uruchomienie są w ich README.
+- Gałąź `Dodanie-godziny-przed-linia`: Service Box ma jasny raport HTML do użycia jako treść maila, pastelowe podsumowanie, osobne dni i karty grup błędów. Nagłówek i temat maila zawierają konfigurowalny hostname; karty pokazują nazwy plików, godziny właściwych wpisów i linie wszystkich zachowanych źródeł. Dni, grupy i źródła są od najnowszych; zachowano priorytet Access Denied. TXT nadal zawiera kompletne szczegóły i może być załącznikiem. Zmiana nie została w ramach tego zadania połączona do `develop` ani `main`.
+- Sprawdzenia w Windows PowerShell 5.1 na sztucznych logach: zgodność szczegółów TXT, grupowanie/daty, puste wyniki, niepełny odczyt, długie i specjalne komunikaty oraz HTML/załącznik z atrapą SMTP. Brak prawdziwej wysyłki i wizualnej weryfikacji w klientach pocztowych; podgląd lokalnego pliku przez przeglądarkę był zablokowany.
+- Testy i podglądy znajdują się lokalnie w ignorowanym `!codex-temp/Service Box Logs Reporting/`. Normalne działanie nie zależy od warsztatu.
 
 ## Zasady aktualizacji
 - Przed kolejną pracą sprawdź bieżącą gałąź, status i historię Git; powyższy zapis nie zastępuje tego sprawdzenia.

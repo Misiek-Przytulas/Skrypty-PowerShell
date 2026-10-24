@@ -172,8 +172,13 @@ param(
     # Optional SMTP credentials. Leave unset for a relay that does not require them.
     [pscredential]$Credential,
 
-    # Prefix; the script appends the date window, counts and scan status.
-    [string]$Subject = 'Service Box - Logs report'
+    # Host displayed in the HTML title and email subject. Defaults to this machine.
+    # Override when reporting logs collected from a different server.
+    [string]$ReportHostName = [Environment]::MachineName,
+
+    # Subject label: final format is "<ReportHostName> <Subject> - <reporting period>".
+    # Example in all-dates mode: SERVER01 Logs report - ALL DATES.
+    [string]$Subject = 'Logs report'
 )
 
 # ============================================================================
@@ -347,7 +352,7 @@ foreach ($event in $events) {
         $seen[$key] = $event
     }
 }
-$ordered = @($reported | Sort-Object @{ Expression = 'Denied'; Descending = $true }, CN, Date)
+$ordered = @($reported | Sort-Object @{ Expression = 'Denied'; Descending = $true }, @{ Expression = 'Date'; Descending = $true }, CN)
 $access = @($ordered | Where-Object Denied)
 $other = @($ordered | Where-Object { -not $_.Denied })
 # ============================================================================
@@ -362,12 +367,32 @@ $lines.Add("Status: $status | Files read: $($stats.Read)/$($files.Count) | Ignor
 $lines.Add('Dates use the outer log timestamp, not dates inside XML attributes. No time zone conversion is performed.')
 
 function Encode-Html([string]$value) { [Net.WebUtility]::HtmlEncode($value) }
-$html = [Text.StringBuilder]::new()
-[void]$html.Append('<html><head><meta charset="utf-8"></head><body style="font-family:Segoe UI,Arial,sans-serif">')
-[void]$html.Append("<h2>Service Box - $period</h2><p>Status: <b>$(Encode-Html $status)</b><br>Access Denied: $($access.Count) | Other: $($other.Count) | Ignored: $($stats.Ignored) | Exact copies merged: $duplicateCount<br>Files read: $($stats.Read)/$($files.Count)</p>")
 
-# Always show the selected days, including days with no errors.
-# All-dates mode shows one section for each date with retained error records.
+# Presentation tables and inline CSS work without scripts, external fonts or images.
+# The conditional wrapper provides a fixed-width fallback in classic Outlook.
+$html = [Text.StringBuilder]::new()
+[void]$html.Append('<!DOCTYPE html><html lang="en" xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><title>Service Box | Log report</title><!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]--></head>')
+[void]$html.Append('<body bgcolor="#F3F5F9" style="margin:0;padding:0;background-color:#F3F5F9;color:#25334A;font-family:Segoe UI,Arial,sans-serif;-webkit-text-size-adjust:100%;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F3F5F9" style="width:100%;border-collapse:collapse;"><tr><td align="center" style="padding:24px 12px;"><!--[if mso]><table role="presentation" width="840" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]--><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="width:100%;max-width:840px;background-color:#FFFFFF;border:1px solid #E1E6EF;border-radius:16px;border-collapse:separate;">')
+[void]$html.Append('<tr><td bgcolor="#EEF0FC" style="padding:28px 24px;background-color:#EEF0FC;border-top:4px solid #8E99CF;"><p style="margin:0 0 8px;font-size:11px;line-height:16px;letter-spacing:2px;font-weight:700;color:#626F9D;">SERVICE BOX / IQSERVICE</p><h1 style="margin:0;font-size:28px;line-height:36px;font-weight:700;color:#25334A;">Daily log report: ')
+[void]$html.Append("$(Encode-Html $ReportHostName)</h1>")
+[void]$html.Append("<p style='margin:10px 0 0;font-size:13px;line-height:21px;color:#59677E;'>Reporting period: $(Encode-Html $period)</p></td></tr>")
+$scanBackground = if ($issues.Count) { '#FFF4D9' } else { '#EAF6EF' }
+$scanColor = if ($issues.Count) { '#79571B' } else { '#32634A' }
+$scanTitle = if ($issues.Count) { 'Scan incomplete' } else { 'Scan complete' }
+$scanDescription = if ($issues.Count) { 'Some files could not be checked. Review the scan issues below before interpreting the counts.' } else { 'All selected files were read. Error counts are shown below.' }
+[void]$html.Append("<tr><td style='padding:20px 24px 0;'><table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0'><tr><td bgcolor='$scanBackground' style='padding:14px 16px;background-color:$scanBackground;border-radius:8px;color:$scanColor;font-size:13px;line-height:20px;'><strong>$scanTitle</strong><br>$scanDescription</td></tr></table></td></tr>")
+$affectedCount = @($access | Where-Object { $_.CN -ne '(no CN)' } | Select-Object -ExpandProperty CN -Unique).Count
+[void]$html.Append("<tr><td style='padding:16px 24px 0;'><table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0' style='table-layout:fixed;'><tr>")
+foreach ($metric in @(
+    @{ Label = 'ACCESS DENIED'; Value = $access.Count; Detail = "$affectedCount affected objects"; Background = '#FBECEE'; Color = '#914758' },
+    @{ Label = 'OTHER ERRORS'; Value = $other.Count; Detail = 'Retained events'; Background = '#EBF2FC'; Color = '#42658F' },
+    @{ Label = 'FILES READ'; Value = "$($stats.Read)/$($files.Count)"; Detail = 'Selected log files'; Background = '#F0EFFA'; Color = '#655C92' }
+)) {
+    [void]$html.Append("<td width='33%' valign='top' style='padding:0 3px;'><table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0'><tr><td bgcolor='$($metric.Background)' style='padding:14px 10px;background-color:$($metric.Background);border-radius:8px;'><p style='margin:0;font-size:10px;line-height:16px;font-weight:700;letter-spacing:0.5px;color:$($metric.Color);'>$($metric.Label)</p><p style='margin:6px 0;font-size:28px;line-height:34px;font-weight:700;color:#25334A;'>$($metric.Value)</p><p style='margin:0;font-size:11px;line-height:16px;color:#59677E;'>$($metric.Detail)</p></td></tr></table></td>")
+}
+[void]$html.Append("</tr></table><p style='margin:12px 0 0;font-size:11px;line-height:18px;color:#68758B;'>Ignored entries: $($stats.Ignored) &nbsp; | &nbsp; Exact copies merged: $duplicateCount &nbsp; | &nbsp; Counts reflect retained events.</p></td></tr>")
+
+# Group within each day; date-limited mode also displays empty days.
 $reportDays = if ($AllErrors) {
     @($ordered | ForEach-Object { $_.Date.Date } | Sort-Object -Unique)
 } else {
@@ -376,53 +401,94 @@ $reportDays = if ($AllErrors) {
 }
 if (@($reportDays).Count -eq 0) {
     $lines.Add('No errors found in the selected date range.')
-    [void]$html.Append('<p>No errors found in the selected date range.</p>')
+    $emptyMessage = if ($issues.Count) { 'No errors detected in the readable logs; scan is incomplete.' } else { 'No errors found in the selected date range.' }
+    [void]$html.Append("<tr><td style='padding:24px;font-size:14px;line-height:22px;'>$(Encode-Html $emptyMessage)</td></tr>")
 }
-foreach ($reportDay in $reportDays) {
+# Show the newest day first in HTML and TXT.
+foreach ($reportDay in @($reportDays | Sort-Object -Descending)) {
     $dayLabel = if ($reportDay -eq $runTime.Date) { 'TODAY' } elseif ($reportDay -eq $runTime.Date.AddDays(-1)) { 'YESTERDAY' } else { 'DATE' }
     $heading = "$dayLabel - $($reportDay.ToString('yyyy-MM-dd'))"
     $dayAccess = @($access | Where-Object { $_.Date.Date -eq $reportDay })
     $dayOther = @($other | Where-Object { $_.Date.Date -eq $reportDay })
     $lines.Add("`r`n$heading")
     $lines.Add("Access Denied: $($dayAccess.Count) | Other errors: $($dayOther.Count)")
-    [void]$html.Append("<h2 style='border-top:2px solid #456;padding-top:14px'>$heading</h2><p>Access Denied: <b>$($dayAccess.Count)</b> | Other errors: <b>$($dayOther.Count)</b></p>")
-foreach ($section in @(@{ Name = 'ACCESS DENIED'; Items = $dayAccess }, @{ Name = 'OTHER ERRORS'; Items = $dayOther })) {
-    $lines.Add("`r`n============================================================")
-    $lines.Add("$($section.Name): $($section.Items.Count) events")
-    [void]$html.Append("<h3>$($section.Name)</h3>")
-    if ($section.Items.Count -eq 0) {
-        $message = if ($section.Name -eq 'ACCESS DENIED') { 'No Access Denied errors found' } else { 'No other errors found' }
-        if ($issues.Count) { $message = 'No errors detected in the readable logs; scan is incomplete' }
-        $lines.Add($message)
-        [void]$html.Append("<p>$(Encode-Html $message).</p>")
-        continue
+    [void]$html.Append("<tr><td style='padding:28px 24px 0;'><table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0'><tr><td style='padding:0 0 12px;border-bottom:2px solid #E6EAF2;'><p style='margin:0 0 4px;font-size:11px;line-height:16px;letter-spacing:1.5px;font-weight:700;color:#697994;'>$dayLabel</p><h2 style='margin:0;font-size:21px;line-height:29px;color:#25334A;'>$($reportDay.ToString('dd MMMM yyyy', $culture))</h2><p style='margin:6px 0 0;font-size:12px;line-height:19px;color:#68758B;'>Access Denied: $($dayAccess.Count) &nbsp; | &nbsp; Other errors: $($dayOther.Count)</p></td></tr></table>")
+    foreach ($section in @(@{ Name = 'ACCESS DENIED'; Items = $dayAccess }, @{ Name = 'OTHER ERRORS'; Items = $dayOther })) {
+        $lines.Add("`r`n============================================================")
+        $lines.Add("$($section.Name): $($section.Items.Count) events")
+        $isDeniedSection = $section.Name -eq 'ACCESS DENIED'
+        $sectionTitle = if ($isDeniedSection) { 'Access Denied' } else { 'Other errors' }
+        $sectionColor = if ($isDeniedSection) { '#914758' } else { '#42658F' }
+        $sectionBackground = if ($isDeniedSection) { '#FBECEE' } else { '#EBF2FC' }
+        [void]$html.Append("<h3 style='margin:20px 0 10px;font-size:15px;line-height:22px;color:$sectionColor;'>$sectionTitle <span style='font-size:12px;font-weight:400;'>/ $($section.Items.Count) events</span></h3>")
+        if ($section.Items.Count -eq 0) {
+            $message = if ($isDeniedSection) { 'No Access Denied errors found' } else { 'No other errors found' }
+            if ($issues.Count) { $message = 'No errors detected in the readable logs; scan is incomplete' }
+            $lines.Add($message)
+            $emptyBackground = if ($issues.Count) { '#FFF4D9' } else { '#EAF6EF' }
+            $emptyColor = if ($issues.Count) { '#79571B' } else { '#32634A' }
+            [void]$html.Append("<table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0'><tr><td bgcolor='$emptyBackground' style='padding:12px 14px;background-color:$emptyBackground;border-radius:7px;color:$emptyColor;font-size:12px;line-height:20px;'>$(Encode-Html $message).</td></tr></table>")
+            continue
+        }
+        $groups = if ($isDeniedSection) { @($section.Items | Group-Object CN, Operation) } else { @($section.Items | Group-Object Category, Summary) }
+        # Order cards by the most recent event in each group.
+        $groups = @($groups | Sort-Object @{ Expression = { ($_.Group | Measure-Object -Property Date -Maximum).Maximum }; Descending = $true })
+        foreach ($group in $groups) {
+            $items = @($group.Group | Sort-Object Date -Descending)
+            $first = $items[0]
+            $label = if ($first.Denied) { $first.Operation } else { $first.Category }
+            $cardTitle = if ($isDeniedSection) { $first.CN } else { $first.Category }
+            $timeRange = if ($items.Count -eq 1) { $first.Date.ToString('HH:mm:ss') } else { "$($items[-1].Date.ToString('HH:mm:ss')) - $($first.Date.ToString('HH:mm:ss'))" }
+            # Shorten only HTML excerpts. TXT always retains the complete original.
+            $excerpt = $first.Summary
+            $wasTruncated = $excerpt.Length -gt 420
+            if ($wasTruncated) { $excerpt = $excerpt.Substring(0, 420) + ' ...' }
+            # Soft breaks prevent long DNs and tokens from stretching email tables.
+            $excerpt = [regex]::Replace($excerpt, '(\S{48})(?=\S)', ('$1' + [char]0x200B))
+            $safeTitle = [regex]::Replace($cardTitle, '(\S{32})(?=\S)', ('$1' + [char]0x200B))
+            # Show every retained source location, including copies merged across files.
+            # Split at the final colon so Windows drive letters remain part of the path.
+            $sourceHtml = [Text.StringBuilder]::new()
+            # Pair each location with its own timestamp, including merged copies.
+            $groupSources = @($items | ForEach-Object {
+                $eventDate = $_.Date
+                foreach ($location in $_.Sources) {
+                    [pscustomobject]@{ Location = $location; Date = $eventDate }
+                }
+            } | Sort-Object -Property Date -Descending)
+            $seenLocations = @{}
+            foreach ($sourceLocation in $groupSources) {
+                if ($seenLocations.ContainsKey($sourceLocation.Location)) { continue }
+                $seenLocations[$sourceLocation.Location] = $true
+                $sourceTime = $sourceLocation.Date.ToString('HH:mm:ss')
+                if ($sourceLocation.Location -match '^(.*):(\d+)$') {
+                    $sourceFile = [IO.Path]::GetFileName($Matches[1])
+                    $sourceLine = $Matches[2]
+                    $sourceFile = [regex]::Replace($sourceFile, '(\S{48})(?=\S)', ('$1' + [char]0x200B))
+                    [void]$sourceHtml.Append("<p style='margin:0 0 8px;font-size:11px;line-height:18px;color:#68758B;overflow-wrap:anywhere;word-wrap:break-word;'>File: $(Encode-Html $sourceFile) &nbsp; | &nbsp; $sourceTime &nbsp; | &nbsp; Line: $sourceLine</p>")
+                }
+            }
+            [void]$html.Append("<table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0' style='table-layout:fixed;border:1px solid #E1E6EF;border-left:3px solid $sectionColor;border-radius:8px;margin-bottom:10px;'><tr><td bgcolor='$sectionBackground' style='padding:12px 14px;background-color:$sectionBackground;'><table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0' style='table-layout:fixed;'><tr><td valign='top' style='font-size:15px;line-height:22px;font-weight:700;color:#25334A;overflow-wrap:anywhere;word-wrap:break-word;'>$(Encode-Html $safeTitle)</td><td width='82' align='right' valign='top' style='font-size:12px;line-height:22px;font-weight:700;color:$sectionColor;'>$($items.Count) event$(if ($items.Count -ne 1) { 's' })</td></tr></table></td></tr><tr><td style='padding:12px 14px;'><p style='margin:0 0 8px;font-size:11px;line-height:18px;color:#68758B;'>$(Encode-Html $label) &nbsp; | &nbsp; $timeRange</p>$($sourceHtml.ToString())<p style='margin:0;font-family:Consolas,Courier New,monospace;font-size:12px;line-height:20px;color:#42516A;overflow-wrap:anywhere;word-wrap:break-word;'>$(Encode-Html $excerpt)</p>")
+            if ($wasTruncated) { [void]$html.Append("<p style='margin:8px 0 0;font-size:11px;line-height:18px;color:#68758B;'>Message shortened for readability. Full details are available in the TXT report when saved.</p>") }
+            [void]$html.Append('</td></tr></table>')
+        }
+        foreach ($item in $section.Items) {
+            $lines.Add("`r`nCN: $($item.CN) | $($item.Operation) | $($item.Category)")
+            $lines.Add("Time: $($item.Date.ToString('yyyy-MM-dd HH:mm:ss')) | Sources: $($item.Sources -join '; ')")
+            $lines.Add("Message: $($item.Summary)")
+            $lines.Add("Original entry (first copy):`r`n$($item.Raw)")
+        }
     }
-    [void]$html.Append('<table border="1" cellpadding="7" cellspacing="0" style="border-collapse:collapse"><tr><th>Account / object CN</th><th>Operation / category</th><th>Events</th><th>First - last</th><th>Message (first event)</th></tr>')
-    # HTML stays compact: Access Denied groups by CN/operation; other errors by message.
-    # Group counts represent retained events after optional exact-copy merging.
-    $groups = if ($section.Name -eq 'ACCESS DENIED') { @($section.Items | Group-Object CN, Operation) } else { @($section.Items | Group-Object Category, Summary) }
-    foreach ($group in $groups) {
-        $items = @($group.Group | Sort-Object Date)
-        $first = $items[0]
-        $label = if ($first.Denied) { $first.Operation } else { $first.Category }
-        [void]$html.Append("<tr><td><b>$(Encode-Html $first.CN)</b></td><td>$(Encode-Html $label)</td><td>$($items.Count)</td><td>$($first.Date.ToString('yyyy-MM-dd HH:mm:ss')) - $($items[-1].Date.ToString('yyyy-MM-dd HH:mm:ss'))</td><td>$(Encode-Html $first.Summary)</td></tr>")
-    }
-    [void]$html.Append('</table>')
-    # TXT preserves event-level details and source locations for investigation.
-    foreach ($item in $section.Items) {
-        $lines.Add("`r`nCN: $($item.CN) | $($item.Operation) | $($item.Category)")
-        $lines.Add("Time: $($item.Date.ToString('yyyy-MM-dd HH:mm:ss')) | Sources: $($item.Sources -join '; ')")
-        $lines.Add("Message: $($item.Summary)")
-        $lines.Add("Original entry (first copy):`r`n$($item.Raw)")
-    }
+    [void]$html.Append('</td></tr>')
 }
-}
-# Report scan problems independently of error categories and daily counts.
 if ($issues.Count) {
     $lines.Add("`r`nSCAN ISSUES:")
-    [void]$html.Append('<h3>Scan issues</h3><ul>')
-    foreach ($issue in $issues) { $lines.Add($issue); [void]$html.Append("<li>$(Encode-Html $issue)</li>") }
-    [void]$html.Append('</ul>')
+    [void]$html.Append("<tr><td style='padding:24px 24px 0;'><table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0'><tr><td bgcolor='#FFF4D9' style='padding:16px;background-color:#FFF4D9;border:1px solid #EDDEB6;border-radius:8px;'><h3 style='margin:0 0 10px;font-size:15px;line-height:22px;color:#79571B;'>Scan issues / $($issues.Count)</h3>")
+    foreach ($issue in $issues) {
+        $lines.Add($issue)
+        [void]$html.Append("<p style='margin:8px 0;font-size:12px;line-height:20px;color:#79571B;word-break:break-all;'>$(Encode-Html $issue)</p>")
+    }
+    [void]$html.Append('</td></tr></table></td></tr>')
 }
 # ============================================================================
 # BLOCK 8 - OPTIONAL DISK OUTPUT
@@ -439,8 +505,10 @@ if ($SaveToDisk -and ($SaveTxt -or $SaveHtml)) {
     if ($SaveTxt) { $txtPath = Join-Path $ReportFolder "$baseName.txt" }
     if ($SaveHtml) { $htmlPath = Join-Path $ReportFolder "$baseName.html" }
 }
-if ($txtPath) { [void]$html.Append("<p>TXT report: $(Encode-Html $txtPath)</p>") }
-[void]$html.Append('</body></html>')
+# Describe the attachment only when this run is configured to send it.
+[void]$html.Append("<tr><td style='padding:24px;'><table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0'><tr><td bgcolor='#F5F7FB' style='padding:16px;background-color:#F5F7FB;border-radius:8px;'>")
+$detailNote = if ($SendEmail -and $AttachTxtToEmail -and $txtPath) { 'TXT report attached: full messages, timestamps and source file locations.' } elseif ($txtPath) { "Full details saved in TXT: $txtPath" } else { 'TXT file output is disabled. Complete event details are available in the console when no files are saved.' }
+[void]$html.Append("<p style='margin:0;font-size:12px;line-height:20px;color:#42516A;word-break:break-all;'>$(Encode-Html $detailNote)</p><p style='margin:10px 0 0;font-size:11px;line-height:18px;color:#68758B;'>Generated $($runTime.ToString('yyyy-MM-dd HH:mm:ss')) &nbsp; | &nbsp; Times as recorded in the logs; no time zone conversion.</p></td></tr></table></td></tr></table><!--[if mso]></td></tr></table><![endif]--></td></tr></table></body></html>")
 # UTF-8 with BOM supports Unicode text in common Windows text editors.
 $utf8 = [Text.UTF8Encoding]::new($true)
 if ($txtPath) {
@@ -467,7 +535,7 @@ if ($SendEmail -and (-not $EmailOnlyWhenErrors -or $events.Count -gt 0 -or $issu
     }
     $mail = @{
         To = $To; From = $From; SmtpServer = $SMTPServer; Port = $SMTPPort
-        Subject = "$Subject $period - Access Denied: $($access.Count) | Other: $($other.Count) | $status"
+        Subject = "$ReportHostName $Subject - $period"
         Body = $html.ToString(); BodyAsHtml = $true
         Encoding = [Text.Encoding]::UTF8; ErrorAction = 'Stop'; UseSsl = [bool]$UseSsl
     }
